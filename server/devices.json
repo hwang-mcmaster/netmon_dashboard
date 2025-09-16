@@ -1,0 +1,20 @@
+[
+  {
+    "id": "gw",
+    "name": "Gateway",
+    "host": "192.168.1.1",
+    "enabled": true
+  },
+  {
+    "id": "google",
+    "name": "Google DNS",
+    "host": "8.8.8.8",
+    "enabled": true
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare DNS",
+    "host": "1.1.1.1",
+    "enabled": true
+  }
+]
