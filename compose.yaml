@@ -1,0 +1,78 @@
+name: netmon
+x-app: &app
+  build: .
+  init: true
+  restart: unless-stopped
+  stop_grace_period: 60s
+  mem_limit: 512m
+  cpus: 1
+  environment: &env
+    DATABASE_URL: postgresql://netmon:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/netmon
+    DB_POOL_MAX: 5
+    HOST: 0.0.0.0
+    API_TOKEN: ${API_TOKEN:?Set a 24+ character API_TOKEN in .env}
+    PROBE_ALLOWED_HOSTS: ${PROBE_ALLOWED_HOSTS:-demo}
+    DEMO_MODE: ${DEMO_MODE:-true}
+    NOTIFICATION_CHANNEL: ${NOTIFICATION_CHANNEL:-sink}
+    WEBHOOK_URL: ${WEBHOOK_URL:-}
+    WEBHOOK_TOKEN: ${WEBHOOK_TOKEN:-}
+    WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+    WORKER_POLL_MS: ${WORKER_POLL_MS:-500}
+    DEMO_TARGET_HOST: demo
+    RETENTION_DAYS: ${RETENTION_DAYS:-30}
+  depends_on:
+    db: { condition: service_healthy }
+    migrate: { condition: service_completed_successfully }
+services:
+  db:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: netmon
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: netmon
+    command: [postgres, -c, max_connections=60]
+    volumes: [pgdata:/var/lib/postgresql]
+    restart: unless-stopped
+    mem_limit: 512m
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U netmon -d netmon]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  migrate:
+    <<: *app
+    command: [node, server/src/migrate.js]
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    <<: *app
+    command: [node, server/src/index.js]
+    ports: ["127.0.0.1:4000:4000"]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  worker:
+    <<: *app
+    command: [node, server/src/worker.js]
+    healthcheck:
+      test: [CMD, node, server/src/worker-health.js]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+  demo:
+    <<: *app
+    profiles: [demo]
+    command: [node, server/src/demo.js]
+    environment:
+      DEMO_HOST: 0.0.0.0
+volumes:
+  pgdata:

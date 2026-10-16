@@ -1,17 +1,24 @@
 {
   "name": "netmon-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
-  "main": "src/index.js",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
-    "dev": "node src/index.js",
-    "start": "NODE_ENV=production node src/index.js"
+    "dev": "node --env-file-if-exists=../.env src/index.js",
+    "start": "node --env-file-if-exists=../.env src/index.js",
+    "worker": "node --env-file-if-exists=../.env src/worker.js",
+    "migrate": "node --env-file-if-exists=../.env src/migrate.js",
+    "seed": "node --env-file-if-exists=../.env src/seed.js",
+    "demo": "node src/demo.js",
+    "test": "node --test test/unit.test.js test/probes.test.js",
+    "test:integration": "node --test --test-concurrency=1 test/integration.test.js",
+    "benchmark": "node --env-file-if-exists=../.env scripts/benchmark.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "ping": "^0.4.4",
-    "socket.io": "^4.7.5",
-    "node-cron": "^3.0.3"
+    "express": "5.3.0",
+    "pg": "8.23.1"
   }
 }

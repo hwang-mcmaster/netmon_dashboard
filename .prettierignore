@@ -1,0 +1,10 @@
+node_modules
+dist
+package-lock.json
+server/package-lock.json
+client/package-lock.json
+test-results
+playwright-report
+docs/screenshots
+docs/benchmark-raw.json
+server/devices.json
